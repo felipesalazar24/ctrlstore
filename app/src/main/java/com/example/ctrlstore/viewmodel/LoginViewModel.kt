@@ -8,9 +8,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class LoginViewModel(
-    private val loginUseCase: LoginUseCase
-) : ViewModel() {
+class LoginViewModel : ViewModel() {
+    private val loginUseCase = LoginUseCase(
+        com.example.ctrlstore.data.repository.AuthRepository()
+    )
 
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
     val loginState: StateFlow<LoginState> = _loginState
@@ -47,14 +48,12 @@ class LoginViewModel(
         _formErrors.value = FormErrors()
     }
 }
-
 sealed class LoginState {
     object Idle : LoginState()
     object Loading : LoginState()
     data class Success(val user: User, val isAdmin: Boolean) : LoginState()
     data class Error(val message: String) : LoginState()
 }
-
 data class FormErrors(
     val email: String? = null,
     val password: String? = null,

@@ -15,6 +15,15 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ctrlstore.viewmodel.LoginViewModel
 import com.example.ctrlstore.viewmodel.LoginState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,11 +37,14 @@ fun LoginScreen(
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
 
-    // Manejar estado de éxito
     LaunchedEffect(loginState) {
-        if (loginState is LoginState.Success) {
-            onLoginSuccess()
+        when (loginState) {
+            is LoginState.Success -> {
+                onLoginSuccess()
+            }
+            else -> {}
         }
     }
 
@@ -43,7 +55,6 @@ fun LoginScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Título
         Text(
             text = "Iniciar Sesión",
             fontSize = 28.sp,
@@ -57,18 +68,14 @@ fun LoginScreen(
             color = Color.Gray,
             modifier = Modifier.padding(bottom = 32.dp)
         )
-
-        // Error general
         if (loginState is LoginState.Error) {
             val errorState = loginState as LoginState.Error
             Text(
-                text = errorState.message,
+                text = "Correo o contraseña incorrecto",
                 color = Color.Red,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
-
-        // Email
         Text(
             text = "Correo Electrónico",
             fontSize = 16.sp,
@@ -101,8 +108,6 @@ fun LoginScreen(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Start
             )
         }
-
-        // Password
         Text(
             text = "Contraseña",
             fontSize = 16.sp,
@@ -122,6 +127,24 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
+            visualTransformation = if (passwordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            trailingIcon = {
+                val image = if (passwordVisible) {
+                    Icons.Filled.Visibility
+                } else {
+                    Icons.Filled.VisibilityOff
+                }
+                val description = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(imageVector = image, contentDescription = description)
+                }
+            },
             isError = formErrors.password != null
         )
 
@@ -136,12 +159,10 @@ fun LoginScreen(
             )
         }
 
-        // Progress Bar
         if (loginState is LoginState.Loading) {
             CircularProgressIndicator(modifier = Modifier.padding(bottom = 16.dp))
         }
 
-        // Botón Login
         Button(
             onClick = {
                 viewModel.login(email, password)
@@ -160,8 +181,6 @@ fun LoginScreen(
                 fontSize = 16.sp
             )
         }
-
-        // Link a registro
         Text(
             text = "¿No tienes una cuenta? Regístrate aquí",
             color = Color(0xFF2196F3),
@@ -170,7 +189,6 @@ fun LoginScreen(
                 .padding(16.dp)
         )
 
-        // Info administradores
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -181,7 +199,7 @@ fun LoginScreen(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "Accesos de Administrador:",
+                    text = "👨‍💻 Accesos de Administrador:",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 8.dp)
