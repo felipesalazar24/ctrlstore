@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.ctrlstore.ui.screens.auth.LoginScreen
+import com.example.ctrlstore.ui.screens.auth.RegisterScreen
 import com.example.ctrlstore.ui.theme.CTRLstoreTheme
 
 class MainActivity : ComponentActivity() {
@@ -35,7 +36,15 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "home"
                             },
                             onNavigateToRegister = {
+                                currentScreen = "register"
+                            }
+                        )
+                        "register" -> RegisterScreen(
+                            onRegisterSuccess = {
                                 currentScreen = "home"
+                            },
+                            onNavigateToLogin = {
+                                currentScreen = "login"
                             }
                         )
                         "home" -> HomeScreen()
@@ -45,7 +54,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-//home temporal
+
+// Pantalla temporal de Home
 @Composable
 fun HomeScreen() {
     Box(
