@@ -17,6 +17,7 @@ import com.example.ctrlstore.ui.screens.auth.LoginScreen
 import com.example.ctrlstore.ui.screens.auth.RegisterScreen
 import com.example.ctrlstore.ui.screens.cart.CartScreen
 import com.example.ctrlstore.ui.screens.home.HomeScreen
+import com.example.ctrlstore.ui.screens.products.ProductDetailScreen
 import com.example.ctrlstore.ui.screens.products.ProductsScreen
 import com.example.ctrlstore.ui.theme.CTRLstoreTheme
 
@@ -39,6 +40,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     var currentScreen by remember { mutableStateOf(AppRoutes.Login.route) }
+    var selectedProductId by remember { mutableStateOf(0) }
 
     when (currentScreen) {
         AppRoutes.Login.route -> LoginScreen(
@@ -71,6 +73,10 @@ fun AppNavigation() {
             },
             onNavigateToCart = {
                 currentScreen = AppRoutes.Cart.route
+            },
+            onNavigateToProductDetail = { productId ->
+                selectedProductId = productId
+                currentScreen = "product_detail"
             }
         )
         AppRoutes.Cart.route -> CartScreen(
@@ -79,6 +85,15 @@ fun AppNavigation() {
             },
             onNavigateToProducts = {
                 currentScreen = AppRoutes.Products.route
+            }
+        )
+        "product_detail" -> ProductDetailScreen(
+            productId = selectedProductId,
+            onNavigateBack = {
+                currentScreen = AppRoutes.Products.route
+            },
+            onNavigateToCart = {
+                currentScreen = AppRoutes.Cart.route
             }
         )
     }
