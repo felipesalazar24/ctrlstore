@@ -2,263 +2,179 @@ package com.example.ctrlstore.ui.screens.products
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
-import com.example.ctrlstore.domain.model.Product
-import com.example.ctrlstore.viewmodel.ProductsViewModel
+import com.example.ctrlstore.viewmodel.ProductViewModel
+import com.example.ctrlstore.viewmodel.ProductsState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import coil.compose.rememberAsyncImagePainter
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailScreen(
     productId: Int,
-    onNavigateBack: () -> Unit,
-    onNavigateToCart: () -> Unit
+    onBackClick: () -> Unit,
+    onAddToCart: (com.example.ctrlstore.domain.model.Product) -> Unit
 ) {
-    val viewModel: ProductsViewModel = viewModel()
-    val products = remember { viewModel.getAllProducts() }
-    val product: Product? = remember { products.find { it.id == productId } }
+    val productViewModel: ProductViewModel = viewModel()
+    val productsState by productViewModel.productsState.collectAsState()
 
-    if (product == null) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "Producto no encontrado",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Button(
-                onClick = onNavigateBack,
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Text("Volver a Productos")
-            }
+    // Estado para la imagen principal seleccionada
+    var selectedImageIndex by remember { mutableIntStateOf(0) }
+
+    // Encontrar el producto por ID
+    val product = when (productsState) {
+        is ProductsState.Success -> {
+            (productsState as ProductsState.Success)
+                .products.find { it.id == productId }
         }
-        return
+        else -> null
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = product.nombre,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = Color.White
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onNavigateToCart) {
-                        Icon(
-                            imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = "Carrito",
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF2196F3)
-                )
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    // Aquí iría la lógica para agregar al carrito
-                    onNavigateToCart()
-                },
-                containerColor = Color(0xFF4CAF50),
-                contentColor = Color.White
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingCart,
-                    contentDescription = "Agregar al carrito"
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Agregar al Carrito")
-            }
-        }
-    ) { paddingValues ->
-        Column(
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Barra superior
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Imagen principal del producto
-            Image(
-                painter = rememberAsyncImagePainter(
-                    model = product.imagen,
-                    error = painterResource(android.R.drawable.ic_menu_report_image)
-                ),
-                contentDescription = product.nombre,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+            }
+            Text(
+                "Detalle del Producto",
+                style = MaterialTheme.typography.headlineSmall
             )
+            Spacer(modifier = Modifier.width(48.dp)) // Para centrar el título
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Miniaturas
-            if (product.miniaturas.isNotEmpty()) {
-                Text(
-                    text = "Galería:",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(
+        if (product == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Producto no encontrado")
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
+                // IMAGEN PRINCIPAL
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .height(300.dp),
+                    elevation = CardDefaults.cardElevation(8.dp)
                 ) {
-                    items(product.miniaturas) { miniatura ->
-                        Image(
-                            painter = rememberAsyncImagePainter(
-                                model = miniatura,
-                                error = painterResource(android.R.drawable.ic_menu_report_image)
-                            ),
-                            contentDescription = "Miniatura",
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
-                        )
+                    val imageUrl = if (product.miniaturas.isNotEmpty()) {
+                        // Si hay miniaturas, usa la seleccionada
+                        product.miniaturas.getOrNull(selectedImageIndex) ?: product.imagen
+                    } else {
+                        // Si no hay miniaturas, usa la imagen principal
+                        product.imagen
                     }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
 
-            // Información del producto
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                // Precio
-                Text(
-                    text = "$${product.precio}",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2196F3)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-
-                Surface(
-                    color = when (product.atributo) {
-                        "Mouse" -> Color(0xFFFF9800)
-                        "Teclado" -> Color(0xFF4CAF50)
-                        "Audifono" -> Color(0xFF9C27B0)
-                        "Monitor" -> Color(0xFF2196F3)
-                        else -> Color.Gray
-                    },
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text(
-                        text = product.atributo,
-                        fontSize = 16.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    Image(
+                        painter = rememberAsyncImagePainter(model = imageUrl),
+                        contentDescription = "Imagen de ${product.nombre}",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Descripción
+                // MINIATURAS (si existen)
+                if (product.miniaturas.isNotEmpty()) {
+                    Text(
+                        text = "Más imágenes:",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        product.miniaturas.forEachIndexed { index, thumbnailUrl ->
+                            Card(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clickable { selectedImageIndex = index },
+                                elevation = CardDefaults.cardElevation(4.dp),
+                                border = if (selectedImageIndex == index) {
+                                    CardDefaults.outlinedCardBorder()
+                                } else {
+                                    null
+                                }
+                            ) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(model = thumbnailUrl),
+                                    contentDescription = "Miniatura ${index + 1}",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // INFORMACIÓN DEL PRODUCTO
                 Text(
-                    text = "Descripción:",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    text = product.nombre,
+                    style = MaterialTheme.typography.headlineMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = product.precioFormateado,
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = product.descripcion,
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp,
-                    textAlign = TextAlign.Justify
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Especificaciones
-                Text(
-                    text = "Especificaciones:",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.bodyLarge
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Column {
-                    SpecificationItem("Marca", product.nombre.split(" ")[0])
-                    SpecificationItem("Modelo", product.nombre)
-                    SpecificationItem("Categoría", product.atributo)
-                    SpecificationItem("Garantía", "1 año")
-                    SpecificationItem("Disponibilidad", "En stock")
+                Text(
+                    text = "Categoría: ${product.atributo}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // BOTÓN AGREGAR AL CARRITO
+                Button(
+                    onClick = { onAddToCart(product) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                ) {
+                    Text("Agregar al Carrito - ${product.precioFormateado}")
                 }
             }
-
-            Spacer(modifier = Modifier.height(80.dp))
         }
-    }
-}
-
-@Composable
-fun SpecificationItem(title: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = title,
-            fontSize = 14.sp,
-            color = Color.Gray,
-            fontWeight = FontWeight.Medium
-        )
-        Text(
-            text = value,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
     }
 }
