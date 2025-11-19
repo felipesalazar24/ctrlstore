@@ -63,6 +63,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.7.5")
     implementation("androidx.compose.ui:ui-tooling:1.7.5")
     implementation("androidx.compose.foundation:foundation:1.7.5")
+    implementation("io.coil-kt:coil-compose:2.4.0")
 }
 
 dependencies {
