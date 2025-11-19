@@ -1,27 +1,59 @@
 package com.example.ctrlstore.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.ctrlstore.data.repository.ProductRepository
 import com.example.ctrlstore.domain.model.Product
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
-class ProductsViewModel : ViewModel() {
+class ProductViewModel : ViewModel() {
 
     private val productRepository = ProductRepository()
 
-    fun getAllProducts(): List<Product> {
-        return try {
-            productRepository.getAllProducts()
-        } catch (e: Exception) {
-            // Retorna lista vacía en caso de error
-            emptyList()
+    private val _productsState = MutableStateFlow<ProductsState>(ProductsState.Loading)
+    val productsState: StateFlow<ProductsState> = _productsState
+
+    private val _selectedProduct = MutableStateFlow<Product?>(null)
+    val selectedProduct: StateFlow<Product?> = _selectedProduct
+
+    init {
+        loadProducts()
+    }
+
+    fun loadProducts() {
+        viewModelScope.launch {
+            _productsState.value = ProductsState.Loading
+            try {
+                val products = productRepository.getAllProducts()
+                _productsState.value = ProductsState.Success(products)
+            } catch (e: Exception) {
+                _productsState.value = ProductsState.Error("Error al cargar productos: ${e.message}")
+            }
         }
     }
 
     fun getProductsByCategory(category: String): List<Product> {
-        return productRepository.getProductsByCategory(category)
+        return when (val state = _productsState.value) {
+            is ProductsState.Success -> state.products.filter {
+                it.atributo.equals(category, ignoreCase = true)
+            }
+            else -> emptyList()
+        }
     }
 
-    fun getCategories(): List<String> {
-        return getAllProducts().map { it.atributo }.distinct()
+    fun setSelectedProduct(product: Product) {
+        _selectedProduct.value = product
     }
+
+    fun clearSelectedProduct() {
+        _selectedProduct.value = null
+    }
+}
+
+sealed class ProductsState {
+    object Loading : ProductsState()
+    data class Success(val products: List<Product>) : ProductsState()
+    data class Error(val message: String) : ProductsState()
 }

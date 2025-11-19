@@ -1,218 +1,152 @@
 package com.example.ctrlstore.ui.screens.products
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.rememberAsyncImagePainter
-import com.example.ctrlstore.viewmodel.ProductsViewModel
+import com.example.ctrlstore.ui.components.NetworkImage
+import com.example.ctrlstore.viewmodel.ProductViewModel
+import com.example.ctrlstore.viewmodel.ProductsState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductsScreen(
-    onNavigateToHome: () -> Unit,
-    onNavigateToCart: () -> Unit,
-    onNavigateToProductDetail: (Int) -> Unit
+    onBackClick: () -> Unit,
+    onProductClick: (com.example.ctrlstore.domain.model.Product) -> Unit
 ) {
-    val viewModel: ProductsViewModel = viewModel()
-    val products = remember { viewModel.getAllProducts() }
-    val categories = remember { viewModel.getCategories() }
+    val productViewModel: ProductViewModel = viewModel()
+    val productsState by productViewModel.productsState.collectAsState()
 
-    var selectedCategory by remember { mutableStateOf("Todos") }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        // Header
-        TopAppBar(
-            title = {
-                Text(
-                    text = "Productos",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onNavigateToHome) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Volver",
-                        tint = Color.White
-                    )
-                }
-            },
-            actions = {
-                IconButton(onClick = onNavigateToCart) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingCart,
-                        contentDescription = "Carrito",
-                        tint = Color.White
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color(0xFF2196F3)
-            )
-        )
-
-        // Filtros por categoría
-        LazyRow(
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Barra superior
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Botón "Todos"
-            item {
-                FilterChip(
-                    selected = selectedCategory == "Todos",
-                    onClick = { selectedCategory = "Todos" },
-                    label = { Text("Todos") }
-                )
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
             }
-
-            // Botones por categoría
-            items(categories) { category ->
-                FilterChip(
-                    selected = selectedCategory == category,
-                    onClick = { selectedCategory = category },
-                    label = { Text(category) }
-                )
-            }
+            Text(
+                "Todos los Productos",
+                style = MaterialTheme.typography.headlineSmall
+            )
+            Spacer(modifier = Modifier.width(48.dp))
         }
 
-        // Lista de productos
-        val filteredProducts = if (selectedCategory == "Todos") {
-            products
-        } else {
-            products.filter { it.atributo == selectedCategory }
-        }
+        when (productsState) {
+            is ProductsState.Loading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(filteredProducts) { product ->
-                ProductCard(
-                    product = product,
-                    onProductClick = { onNavigateToProductDetail(product.id) }
-                )
+            is ProductsState.Error -> {
+                val errorState = productsState as ProductsState.Error
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Error: ${errorState.message}")
+                        Button(
+                            onClick = { productViewModel.loadProducts() },
+                            modifier = Modifier.padding(top = 16.dp)
+                        ) {
+                            Text("Reintentar")
+                        }
+                    }
+                }
+            }
+
+            is ProductsState.Success -> {
+                val successState = productsState as ProductsState.Success
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(successState.products) { product ->
+                        ProductItem(
+                            product = product,
+                            onProductClick = onProductClick
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun ProductCard(
+fun ProductItem(
     product: com.example.ctrlstore.domain.model.Product,
-    onProductClick: () -> Unit
+    onProductClick: (com.example.ctrlstore.domain.model.Product) -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onProductClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        onClick = { onProductClick(product) },
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // Imagen del producto
-            Image(
-                painter = rememberAsyncImagePainter(
-                    model = product.imagen,
-                    error = painterResource(android.R.drawable.ic_menu_report_image)
-                ),
-                contentDescription = product.nombre,
+        Column(modifier = Modifier.padding(16.dp)) {
+            // IMAGEN DEL PRODUCTO
+            NetworkImage(
+                imageUrl = product.imagen,
+                contentDescription = "Imagen de ${product.nombre}",
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
+                    .fillMaxWidth()
+                    .height(200.dp)
             )
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Información del producto
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = product.nombre,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Text(
+                text = product.nombre,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2
+            )
 
-                Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-                Text(
-                    text = product.descripcion,
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Text(
+                text = product.precioFormateado,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "$${product.precio}",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2196F3)
-                    )
+            Text(
+                text = product.descripcion,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2
+            )
 
-                    Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-                    Text(
-                        text = product.atributo,
-                        fontSize = 12.sp,
-                        color = Color.White,
-                        modifier = Modifier
-                            .background(
-                                color = when (product.atributo) {
-                                    "Mouse" -> Color(0xFFFF9800)
-                                    "Teclado" -> Color(0xFF4CAF50)
-                                    "Audifono" -> Color(0xFF9C27B0)
-                                    "Monitor" -> Color(0xFF2196F3)
-                                    else -> Color.Gray
-                                },
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
+            Text(
+                text = product.atributo,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
