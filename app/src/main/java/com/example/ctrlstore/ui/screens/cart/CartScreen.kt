@@ -10,6 +10,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+
+//Carrito temporal
 @Composable
 fun CartScreen(
     onNavigateToHome: () -> Unit,
