@@ -1,77 +1,73 @@
 package com.example.ctrlstore.ui.screens.home
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @Composable
 fun HomeScreen(
     onNavigateToProducts: () -> Unit,
-    onNavigateToCart: () -> Unit
+    onNavigateToCart: () -> Unit,
+    onLogout: () -> Unit
 ) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(16.dp)
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "¡Bienvenido a CTRL Store!",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF2196F3),
+            "Bienvenido a CTRL Store",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+
+        Text(
+            "Tu tienda de tecnología favorita",
+            style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(bottom = 32.dp)
         )
-        Text(
-            text = "Tu tienda de tecnología favorita",
-            fontSize = 18.sp,
-            color = Color.Gray,
-            modifier = Modifier.padding(bottom = 48.dp)
-        )
-        Button(
+
+        // Botón Ver Todos los Productos
+        FilledTonalButton(
             onClick = onNavigateToProducts,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp)
-                .padding(bottom = 16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF2196F3)
-            )
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Ver Productos",
-                fontSize = 18.sp,
-                modifier = Modifier.padding(8.dp)
-            )
+            Icon(Icons.Default.Person, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Ver Todos los Productos")
         }
-        Button(
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Botón Carrito de Compras
+        FilledTonalButton(
             onClick = onNavigateToCart,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp)
-                .padding(bottom = 16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4CAF50)
-            )
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Ver Carrito",
-                fontSize = 18.sp,
-                modifier = Modifier.padding(8.dp)
-            )
+            Icon(Icons.Default.ShoppingCart, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Ver Carrito de Compras")
         }
-        Text(
-            text = "Encuentra los mejores productos tecnológicos",
-            fontSize = 14.sp,
-            color = Color.LightGray,
-            modifier = Modifier.padding(top = 48.dp)
-        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Botón Cerrar Sesión
+        OutlinedButton(
+            onClick = onLogout,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.ExitToApp, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Cerrar Sesión")
+        }
     }
 }
