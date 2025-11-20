@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,7 +25,8 @@ import coil.compose.rememberAsyncImagePainter
 fun ProductDetailScreen(
     productId: Int,
     onBackClick: () -> Unit,
-    onAddToCart: (com.example.ctrlstore.domain.model.Product) -> Unit
+    onAddToCart: (com.example.ctrlstore.domain.model.Product) -> Unit,
+    onNavigateToCart: () -> Unit
 ) {
     val productViewModel: ProductViewModel = viewModel()
     val productsState by productViewModel.productsState.collectAsState()
@@ -57,7 +59,9 @@ fun ProductDetailScreen(
                 "Detalle del Producto",
                 style = MaterialTheme.typography.headlineSmall
             )
-            Spacer(modifier = Modifier.width(48.dp)) // Para centrar el título
+            IconButton(onClick = onNavigateToCart) {
+                Icon(Icons.Default.ShoppingCart, contentDescription = "Ir al carrito")
+            }
         }
 
         if (product == null) {

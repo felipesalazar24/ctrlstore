@@ -85,6 +85,9 @@ class MainActivity : ComponentActivity() {
                             onProductClick = { product ->
                                 selectedProductId = product.id
                                 currentScreen = "productDetail"
+                            },
+                            onNavigateToCart = {
+                                currentScreen = "cart"
                             }
                         )
                         "productDetail" -> ProductDetailScreen(
@@ -101,6 +104,9 @@ class MainActivity : ComponentActivity() {
                                     quantity = 1
                                 )
                                 cartViewModel.addItem(item)
+                            },
+                            onNavigateToCart = {
+                                currentScreen = "cart"
                             }
                         )
                         "cart" -> CartScreen(
