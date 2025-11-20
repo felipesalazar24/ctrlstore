@@ -5,24 +5,25 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ctrlstore.ui.screens.auth.LoginScreen
 import com.example.ctrlstore.ui.screens.auth.RegisterScreen
 import com.example.ctrlstore.ui.screens.products.ProductDetailScreen
 import com.example.ctrlstore.ui.screens.products.ProductsScreen
+import com.example.ctrlstore.ui.screens.cart.CartScreen
 import com.example.ctrlstore.ui.theme.screen.HomeScreen
 import com.example.ctrlstore.ui.theme.CTRLstoreTheme
+import com.example.ctrlstore.data.local.CartItem
+import com.example.ctrlstore.viewmodel.CartViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,8 +34,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    val cartViewModel: CartViewModel = viewModel()
+
                     var currentScreen by remember { mutableStateOf("login") }
-                    var selectedProductId by remember { mutableStateOf(0) }
+                    var selectedProductId by remember { mutableIntStateOf(0) }
 
                     when (currentScreen) {
                         "login" -> LoginScreen(
@@ -58,7 +61,7 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "products"
                             },
                             onNavigateToCart = {
-                                println("Carrito - En desarrollo")
+                                currentScreen = "cart"
                             },
                             onLogout = {
                                 clearAllSessionData()
@@ -80,7 +83,23 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "products"
                             },
                             onAddToCart = { product ->
+                                val item = CartItem(
+                                    productId = product.id.toString(),
+                                    title = product.nombre,
+                                    price = product.precio.toDouble(),
+                                    imageUrl = product.imagen,
+                                    quantity = 1
+                                )
+                                cartViewModel.addItem(item)
                                 println("Producto agregado al carrito: ${product.nombre}")
+                            }
+                        )
+                        "cart" -> CartScreen(
+                            onNavigateToProducts = {
+                                currentScreen = "products"
+                            },
+                            onNavigateToHome = {
+                                currentScreen = "home"
                             }
                         )
                     }
@@ -104,15 +123,5 @@ class MainActivity : ComponentActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
         finish()
-    }
-}
-
-@Composable
-fun SimpleHomeScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text("Pantalla Home Simple")
     }
 }
