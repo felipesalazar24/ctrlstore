@@ -12,9 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/**
- * Convertimos a AndroidViewModel para poder usar getApplication() y guardar el user en UserStorage.
- */
 class RegisterViewModel(application: Application) : AndroidViewModel(application) {
 
     private val registerUseCase = RegisterUseCase(
@@ -47,15 +44,16 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
             )
 
             if (result.success) {
-                // Guardar usuario persistente usando UserStorage
                 val userDomain: User = result.user!!
                 val stored = StoredUser(
                     id = userDomain.id,
                     name = userDomain.nombre,
                     email = userDomain.email,
-                    token = null // si más adelante tienes token, agrégalo
+                    password = password,
+                    token = null
                 )
                 UserStorage.saveUser(getApplication(), stored)
+                UserStorage.setLoggedOut(getApplication(), false)
 
                 _registerState.value = RegisterState.Success(userDomain)
             } else {

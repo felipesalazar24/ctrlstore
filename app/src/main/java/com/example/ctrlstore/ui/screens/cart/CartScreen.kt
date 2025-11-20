@@ -57,6 +57,7 @@ fun CartScreen(
         }
 
         if (cartState.isEmpty()) {
+            // Estado vacío: mostramos mensaje y botones para navegar (Home / Productos)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -77,6 +78,29 @@ fun CartScreen(
                     color = Color.Gray,
                     modifier = Modifier.padding(bottom = 32.dp)
                 )
+
+                // Botones visibles cuando el carrito está vacío
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Button(
+                        onClick = onNavigateToProducts,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2196F3)
+                        )
+                    ) {
+                        Text("Ir a Productos")
+                    }
+
+                    OutlinedButton(
+                        onClick = onNavigateToHome,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Gray)
+                    ) {
+                        Text("Volver al Inicio")
+                    }
+                }
             }
         } else {
             // Lista de items
@@ -98,6 +122,7 @@ fun CartScreen(
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Imagen (si tienes NetworkImage componible)
                             NetworkImage(
                                 imageUrl = item.imageUrl ?: "",
                                 contentDescription = item.title,
@@ -122,6 +147,7 @@ fun CartScreen(
                 }
             }
 
+            // Total y acciones
             val total = cartState.fold(0.0) { acc, it -> acc + (it.price * it.quantity) }
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(

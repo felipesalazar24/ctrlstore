@@ -11,10 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/**
- * AndroidViewModel para poder acceder a getApplication() y guardar el usuario en UserStorage
- * cuando el login sea exitoso.
- */
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val loginUseCase = LoginUseCase(
         com.example.ctrlstore.data.repository.AuthRepository()
@@ -44,21 +40,42 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             val result = loginUseCase(email, password)
 
             if (result.success) {
-                // Guardar usuario persistentemente usando UserStorage
                 val userDomain: User = result.user!!
                 val stored = StoredUser(
                     id = userDomain.id,
                     name = userDomain.nombre,
                     email = userDomain.email,
-                    token = null // si luego tienes token, guardalo aquí
+                    password = null,
+                    token = null
                 )
-                UserStorage.saveUser(getApplication(), stored)
+                if (!result.isAdmin) {
+                    UserStorage.saveUser(getApplication(), stored)
+                    UserStorage.setLoggedOut(getApplication(), false)
+                } else {
+                }
 
                 _loginState.value = LoginState.Success(userDomain, result.isAdmin)
             } else {
-                _loginState.value = LoginState.Error(result.message ?: "Error desconocido")
+                val local = UserStorage.getUser(getApplication())
+                if (local != null && local.email == email && local.password == password) {
+                    val userDomain = User(
+                        id = local.id ?: "local",
+                        email = local.email ?: email,
+                        nombre = local.name ?: "",
+                        rol = "user"
+                    )
+                    UserStorage.setLoggedOut(getApplication(), false)
+                    _loginState.value = LoginState.Success(userDomain, false)
+                } else {
+                    _loginState.value = LoginState.Error(result.message ?: "Error desconocido")
+                }
             }
         }
+    }
+
+    fun resetState() {
+        _loginState.value = LoginState.Idle
+        _formErrors.value = FormErrors()
     }
 
     fun clearErrors() {

@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +20,8 @@ import com.example.ctrlstore.viewmodel.ProductsState
 @Composable
 fun ProductsScreen(
     onBackClick: () -> Unit,
-    onProductClick: (com.example.ctrlstore.domain.model.Product) -> Unit
+    onProductClick: (com.example.ctrlstore.domain.model.Product) -> Unit,
+    onNavigateToCart: () -> Unit
 ) {
     val productViewModel: ProductViewModel = viewModel()
     val productsState by productViewModel.productsState.collectAsState()
@@ -40,7 +42,9 @@ fun ProductsScreen(
                 "Todos los Productos",
                 style = MaterialTheme.typography.headlineSmall
             )
-            Spacer(modifier = Modifier.width(48.dp))
+            IconButton(onClick = onNavigateToCart) {
+                Icon(Icons.Default.ShoppingCart, contentDescription = "Ir al carrito")
+            }
         }
 
         when (productsState) {
@@ -114,6 +118,7 @@ fun ProductItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
+                    .clip(MaterialTheme.shapes.medium)
             )
 
             Spacer(modifier = Modifier.height(12.dp))

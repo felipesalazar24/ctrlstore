@@ -1,8 +1,7 @@
 package com.example.ctrlstore
 
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,29 +13,42 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ctrlstore.data.local.CartItem
+import com.example.ctrlstore.data.local.CartStorage
+import com.example.ctrlstore.data.local.UserStorage
 import com.example.ctrlstore.ui.screens.auth.LoginScreen
 import com.example.ctrlstore.ui.screens.auth.RegisterScreen
 import com.example.ctrlstore.ui.screens.products.ProductDetailScreen
 import com.example.ctrlstore.ui.screens.products.ProductsScreen
 import com.example.ctrlstore.ui.screens.cart.CartScreen
-import com.example.ctrlstore.ui.theme.screen.HomeScreen
+import com.example.ctrlstore.ui.screens.home.HomeScreen
 import com.example.ctrlstore.ui.theme.CTRLstoreTheme
-import com.example.ctrlstore.data.local.CartItem
 import com.example.ctrlstore.viewmodel.CartViewModel
+import com.example.ctrlstore.viewmodel.LoginViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val initialScreen = if (UserStorage.isUserLoggedIn(this)) {
+            "home"
+        } else {
+            "login"
+        }
+
         setContent {
             CTRLstoreTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    val context = LocalContext.current
                     val cartViewModel: CartViewModel = viewModel()
+                    val loginViewModel: LoginViewModel = viewModel()
 
-                    var currentScreen by remember { mutableStateOf("login") }
+                    var currentScreen by remember { mutableStateOf(initialScreen) }
                     var selectedProductId by remember { mutableIntStateOf(0) }
 
                     when (currentScreen) {
@@ -57,17 +69,18 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                         "home" -> HomeScreen(
-                            onNavigateToProducts = {
-                                currentScreen = "products"
-                            },
-                            onNavigateToCart = {
-                                currentScreen = "cart"
-                            },
+                            onNavigateToProducts = { currentScreen = "products" },
+                            onNavigateToCart = { currentScreen = "cart" },
                             onLogout = {
-                                clearAllSessionData()
-                                recreateActivity()
+                                try {
+                                    UserStorage.setLoggedOut(this@MainActivity, true)
+                                    loginViewModel.resetState()
+                                } catch (e: Exception) {
+                                    println("SESION: Error al hacer logout: ${e.message}")
+                                }
+                                currentScreen = "login"
                             }
-                        ) // QUITAMOS onProductClick temporalmente
+                        )
                         "products" -> ProductsScreen(
                             onBackClick = {
                                 currentScreen = "home"
@@ -75,6 +88,9 @@ class MainActivity : ComponentActivity() {
                             onProductClick = { product ->
                                 selectedProductId = product.id
                                 currentScreen = "productDetail"
+                            },
+                            onNavigateToCart = {
+                                currentScreen = "cart"
                             }
                         )
                         "productDetail" -> ProductDetailScreen(
@@ -91,7 +107,10 @@ class MainActivity : ComponentActivity() {
                                     quantity = 1
                                 )
                                 cartViewModel.addItem(item)
-                                println("Producto agregado al carrito: ${product.nombre}")
+                                Toast.makeText(context, "${product.nombre} agregado al carrito", Toast.LENGTH_SHORT).show()
+                            },
+                            onNavigateToCart = {
+                                currentScreen = "cart"
                             }
                         )
                         "cart" -> CartScreen(
@@ -106,22 +125,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    private fun clearAllSessionData() {
-        try {
-            val sharedPref = getSharedPreferences("app_session", Context.MODE_PRIVATE)
-            sharedPref.edit().clear().apply()
-            println("SESION: Todos los datos de sesión limpiados")
-        } catch (e: Exception) {
-            println("SESION: Error limpiando datos: ${e.message}")
-        }
-    }
-
-    private fun recreateActivity() {
-        val intent = Intent(this, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
-        finish()
     }
 }
