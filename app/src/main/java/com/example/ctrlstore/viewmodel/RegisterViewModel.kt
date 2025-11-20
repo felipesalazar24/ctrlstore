@@ -1,7 +1,10 @@
 package com.example.ctrlstore.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ctrlstore.data.local.StoredUser
+import com.example.ctrlstore.data.local.UserStorage
 import com.example.ctrlstore.domain.model.RegisterRequest
 import com.example.ctrlstore.domain.model.User
 import com.example.ctrlstore.domain.usecase.RegisterUseCase
@@ -9,7 +12,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class RegisterViewModel : ViewModel() {
+/**
+ * Convertimos a AndroidViewModel para poder usar getApplication() y guardar el user en UserStorage.
+ */
+class RegisterViewModel(application: Application) : AndroidViewModel(application) {
 
     private val registerUseCase = RegisterUseCase(
         com.example.ctrlstore.data.repository.AuthRepository()
@@ -41,7 +47,17 @@ class RegisterViewModel : ViewModel() {
             )
 
             if (result.success) {
-                _registerState.value = RegisterState.Success(result.user!!)
+                // Guardar usuario persistente usando UserStorage
+                val userDomain: User = result.user!!
+                val stored = StoredUser(
+                    id = userDomain.id,
+                    name = userDomain.nombre,
+                    email = userDomain.email,
+                    token = null // si más adelante tienes token, agrégalo
+                )
+                UserStorage.saveUser(getApplication(), stored)
+
+                _registerState.value = RegisterState.Success(userDomain)
             } else {
                 _registerState.value = RegisterState.Error(result.message ?: "Error en el registro")
             }
@@ -78,10 +94,11 @@ class RegisterViewModel : ViewModel() {
         _formErrors.value = RegisterFormErrors()
     }
 }
+
 sealed class RegisterState {
     object Idle : RegisterState()
     object Loading : RegisterState()
-    data class Success(val user: User) : RegisterState()
+    data class Success(val user: com.example.ctrlstore.domain.model.User) : RegisterState()
     data class Error(val message: String) : RegisterState()
 }
 data class RegisterFormErrors(
