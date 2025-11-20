@@ -106,7 +106,7 @@ class MainActivity : ComponentActivity() {
         finish()
     }
 }
-
+//hola
 @Composable
 fun SimpleHomeScreen() {
     Box(
