@@ -1,6 +1,7 @@
 package com.example.ctrlstore
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ctrlstore.data.local.CartItem
 import com.example.ctrlstore.data.local.CartStorage
@@ -42,6 +44,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    val context = LocalContext.current
                     val cartViewModel: CartViewModel = viewModel()
                     val loginViewModel: LoginViewModel = viewModel()
 
@@ -104,6 +107,7 @@ class MainActivity : ComponentActivity() {
                                     quantity = 1
                                 )
                                 cartViewModel.addItem(item)
+                                Toast.makeText(context, "${product.nombre} agregado al carrito", Toast.LENGTH_SHORT).show()
                             },
                             onNavigateToCart = {
                                 currentScreen = "cart"
