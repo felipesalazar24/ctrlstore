@@ -2,58 +2,88 @@ package com.example.ctrlstore.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ctrlstore.data.remote.ApiClient
 import com.example.ctrlstore.data.repository.ProductRepository
 import com.example.ctrlstore.domain.model.Product
+import com.example.ctrlstore.domain.model.RemoteProduct
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ProductViewModel : ViewModel() {
+class ProductsViewModel : ViewModel() {
 
-    private val productRepository = ProductRepository()
+    private val localRepo = ProductRepository()
 
-    private val _productsState = MutableStateFlow<ProductsState>(ProductsState.Loading)
-    val productsState: StateFlow<ProductsState> = _productsState
+    private val _productos = MutableStateFlow<List<Product>>(emptyList())
+    val productos: StateFlow<List<Product>> = _productos
 
-    private val _selectedProduct = MutableStateFlow<Product?>(null)
-    val selectedProduct: StateFlow<Product?> = _selectedProduct
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-    init {
-        loadProducts()
-    }
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
 
-    fun loadProducts() {
+    fun cargarProductos() {
         viewModelScope.launch {
-            _productsState.value = ProductsState.Loading
+            _isLoading.value = true
+            _error.value = null
+
             try {
-                val products = productRepository.getAllProducts()
-                _productsState.value = ProductsState.Success(products)
+                val response = ApiClient.inventarioApi.getProductos()
+
+                val remoteList: List<RemoteProduct> =
+                    if (response.isSuccessful && response.body() != null) {
+                        response.body()!!
+                    } else {
+                        emptyList()
+                    }
+
+                val staticList = localRepo.getAllProducts()
+
+                val finalList: List<Product> =
+                    if (remoteList.isNotEmpty()) {
+                        remoteList.map { remote ->
+                            val template = staticList.find { it.id == remote.id }
+
+                            Product(
+                                id = remote.id,
+                                nombre = remote.nombre,
+                                precio = remote.precio,
+                                descripcion = remote.descripcion,
+                                imagen = template?.imagen ?: "",
+                                miniaturas = template?.miniaturas ?: emptyList(),
+                                atributo = remote.categoria
+                            )
+                        }
+                    } else {
+                        staticList
+                    }
+
+                _productos.value = finalList
+
             } catch (e: Exception) {
-                _productsState.value = ProductsState.Error("Error al cargar productos: ${e.message}")
+                _error.value = e.message ?: "Error al cargar productos"
+                _productos.value = localRepo.getAllProducts() // fallback
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-    fun getProductsByCategory(category: String): List<Product> {
-        return when (val state = _productsState.value) {
-            is ProductsState.Success -> state.products.filter {
-                it.atributo.equals(category, ignoreCase = true)
+    fun cargarProductosPorCategoria(category: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val lista = productos.value.filter {
+                    it.atributo.equals(category, ignoreCase = true)
+                }
+                _productos.value = lista
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Error al filtrar productos"
+            } finally {
+                _isLoading.value = false
             }
-            else -> emptyList()
         }
     }
-
-    fun setSelectedProduct(product: Product) {
-        _selectedProduct.value = product
-    }
-
-    fun clearSelectedProduct() {
-        _selectedProduct.value = null
-    }
-}
-
-sealed class ProductsState {
-    object Loading : ProductsState()
-    data class Success(val products: List<Product>) : ProductsState()
-    data class Error(val message: String) : ProductsState()
 }

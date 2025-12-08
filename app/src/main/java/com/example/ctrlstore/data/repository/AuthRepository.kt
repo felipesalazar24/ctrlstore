@@ -1,59 +1,12 @@
 package com.example.ctrlstore.data.repository
 
-import com.example.ctrlstore.domain.model.LoginResponse
+import  com.example.ctrlstore.data.remote.ApiClient.usuarioApi
 import com.example.ctrlstore.domain.model.RegisterResponse
 import com.example.ctrlstore.domain.model.RegisterRequest
 import com.example.ctrlstore.domain.model.User
 import kotlinx.coroutines.delay
 
 class AuthRepository {
-
-    suspend fun login(email: String, password: String): LoginResponse {
-        delay(1000)
-
-        return try {
-            when {
-                email == "fe.salazarv@duocuc.cl" && password == "adminfelipe" -> {
-                    LoginResponse(
-                        success = true,
-                        user = User("1", email, "Felipe", "admin"),
-                        isAdmin = true
-                    )
-                }
-                email == "mati.vegaa@duocuc.cl" && password == "adminmatias" -> {
-                    LoginResponse(
-                        success = true,
-                        user = User("2", email, "Matias", "admin"),
-                        isAdmin = true
-                    )
-                }
-                email == "aa.lorca@duocuc.cl" && password == "adminaron" -> {
-                    LoginResponse(
-                        success = true,
-                        user = User("3", email, "Aron", "admin"),
-                        isAdmin = true
-                    )
-                }
-                email.isNotBlank() && password.isNotBlank() -> {
-                    LoginResponse(
-                        success = false,
-                        message = "Correo o contraseña incorrecto"
-                    )
-                }
-                else -> {
-                    LoginResponse(
-                        success = false,
-                        message = "Correo o contraseña incorrecto"
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            LoginResponse(
-                success = false,
-                message = "Error de red: ${e.message}"
-            )
-        }
-    }
     suspend fun register(registerRequest: RegisterRequest): RegisterResponse {
         delay(1000)
 
@@ -78,20 +31,27 @@ class AuthRepository {
                     message = "La contraseña debe tener al menos 6 caracteres"
                 )
             }
+
+            val userToCreate = User(
+                id= null,
+                email = registerRequest.email,
+                nombre = registerRequest.nombre,
+                rol = "cliente",
+                password = registerRequest.password
+            )
+
+            val createdUser = usuarioApi.createUsuario(userToCreate)
+
             RegisterResponse(
                 success = true,
-                user = User(
-                    id = System.currentTimeMillis().toString(),
-                    email = registerRequest.email,
-                    nombre = registerRequest.nombre,
-                    rol = "user"
-                )
+                user = createdUser,
+                message = null
             )
 
         } catch (e: Exception) {
             RegisterResponse(
                 success = false,
-                message = "Error de red: ${e.message}"
+                message = "Error al registrar usuario: ${e.message}"
             )
         }
     }

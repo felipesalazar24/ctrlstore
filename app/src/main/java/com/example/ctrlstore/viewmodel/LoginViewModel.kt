@@ -1,20 +1,20 @@
 package com.example.ctrlstore.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ctrlstore.data.local.StoredUser
 import com.example.ctrlstore.data.local.UserStorage
+import com.example.ctrlstore.data.remote.ApiClient
 import com.example.ctrlstore.domain.model.User
-import com.example.ctrlstore.domain.usecase.LoginUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
-    private val loginUseCase = LoginUseCase(
-        com.example.ctrlstore.data.repository.AuthRepository()
-    )
+
+    private val usuarioApi = ApiClient.usuarioApi
 
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
     val loginState: StateFlow<LoginState> = _loginState
@@ -24,6 +24,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
+
             if (email.isBlank()) {
                 _formErrors.value = FormErrors(email = "Por favor ingresa tu correo electrónico.")
                 return@launch
@@ -37,38 +38,63 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             _loginState.value = LoginState.Loading
             _formErrors.value = FormErrors()
 
-            val result = loginUseCase(email, password)
+            try {
+                val usuarios: List<User> = usuarioApi.getUsuarios()
 
-            if (result.success) {
-                val userDomain: User = result.user!!
-                val stored = StoredUser(
-                    id = userDomain.id,
-                    name = userDomain.nombre,
-                    email = userDomain.email,
-                    password = null,
-                    token = null
-                )
-                if (!result.isAdmin) {
-                    UserStorage.saveUser(getApplication(), stored)
-                    UserStorage.setLoggedOut(getApplication(), false)
-                } else {
+                val userDomain = usuarios.firstOrNull { user ->
+                    user.email == email && user.password == password
                 }
 
-                _loginState.value = LoginState.Success(userDomain, result.isAdmin)
-            } else {
-                val local = UserStorage.getUser(getApplication())
-                if (local != null && local.email == email && local.password == password) {
-                    val userDomain = User(
-                        id = local.id ?: "local",
-                        email = local.email ?: email,
-                        nombre = local.name ?: "",
-                        rol = "user"
+                if (userDomain != null) {
+                    val isAdmin = userDomain.rol.equals("ADMIN", ignoreCase = true)
+
+                    val stored = StoredUser(
+                        id = userDomain.id,
+                        name = userDomain.nombre,
+                        email = userDomain.email,
+                        password = password,
+                        token = null
                     )
-                    UserStorage.setLoggedOut(getApplication(), false)
-                    _loginState.value = LoginState.Success(userDomain, false)
+
+                    if (!isAdmin) {
+                        UserStorage.saveUser(getApplication(), stored)
+                        UserStorage.setLoggedOut(getApplication(), false)
+                    }
+
+                    _loginState.value = LoginState.Success(userDomain, isAdmin)
                 } else {
-                    _loginState.value = LoginState.Error(result.message ?: "Error desconocido")
+                    val local = UserStorage.getUser(getApplication())
+                    if (local != null && local.email == email && local.password == password) {
+                        val userDomainOffline = User(
+                            id = local.id,
+                            email = local.email ?: email,
+                            nombre = local.name ?: "",
+                            rol = "user",
+                            password= local.password ?: password
+                        )
+                        UserStorage.setLoggedOut(getApplication(), false)
+                        _loginState.value = LoginState.Success(userDomainOffline, false)
+                    } else {
+                        _loginState.value = LoginState.Error("Correo o contraseña incorrectos.")
+                    }
                 }
+
+            } catch (e: Exception) {
+                Log.e("LOGIN", "Error al conectar con el backend", e)
+                _loginState.value =
+                    LoginState.Error("No se pudo conectar con el servidor. Inténtalo nuevamente.")
+            }
+        }
+    }
+
+
+    fun testBackendConnection() {
+        viewModelScope.launch {
+            try {
+                val usuarios = usuarioApi.getUsuarios()
+                Log.d("API_TEST", "Usuarios recibidos desde backend: ${usuarios.size}")
+            } catch (e: Exception) {
+                Log.e("API_TEST", "Error al probar conexión con backend", e)
             }
         }
     }
@@ -89,6 +115,7 @@ sealed class LoginState {
     data class Success(val user: User, val isAdmin: Boolean) : LoginState()
     data class Error(val message: String) : LoginState()
 }
+
 data class FormErrors(
     val email: String? = null,
     val password: String? = null,

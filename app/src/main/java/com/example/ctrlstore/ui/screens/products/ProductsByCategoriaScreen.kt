@@ -11,17 +11,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ctrlstore.ui.components.NetworkImage
+import coil.compose.AsyncImage
 import com.example.ctrlstore.domain.model.Product
 import com.example.ctrlstore.viewmodel.ProductsViewModel
-import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-
 
 @Composable
-fun ProductsScreen(
+fun ProductsByCategoryScreen(
+    category: String,
     onBackClick: () -> Unit,
     onProductClick: (Product) -> Unit,
     onNavigateToCart: () -> Unit
@@ -31,12 +30,14 @@ fun ProductsScreen(
     val isLoading by productsViewModel.isLoading.collectAsState()
     val error by productsViewModel.error.collectAsState()
 
-    LaunchedEffect(Unit) {
-        productsViewModel.cargarProductos()
+    // Cargar productos filtrados al entrar o cuando cambie la categoría
+    LaunchedEffect(category) {
+        productsViewModel.cargarProductosPorCategoria(category)
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
 
+        // Barra superior
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -48,7 +49,7 @@ fun ProductsScreen(
                 Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
             }
             Text(
-                "Todos los Productos",
+                text = "Categoría: $category",
                 style = MaterialTheme.typography.headlineSmall
             )
             IconButton(onClick = onNavigateToCart) {
@@ -75,17 +76,24 @@ fun ProductsScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Error: $error")
-                        Button(
-                            onClick = { productsViewModel.cargarProductos() },
-                            modifier = Modifier.padding(top = 16.dp)
-                        ) {
+                        Spacer(Modifier.height(8.dp))
+                        Button(onClick = { productsViewModel.cargarProductosPorCategoria(category) }) {
                             Text("Reintentar")
                         }
                     }
+                }
+            }
+
+            productos.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No hay productos en esta categoría")
                 }
             }
 
@@ -98,7 +106,7 @@ fun ProductsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(productos) { product ->
-                        ProductItem(
+                        CategoryProductItem(
                             product = product,
                             onProductClick = onProductClick
                         )
@@ -110,9 +118,9 @@ fun ProductsScreen(
 }
 
 @Composable
-fun ProductItem(
-    product: com.example.ctrlstore.domain.model.Product,
-    onProductClick: (com.example.ctrlstore.domain.model.Product) -> Unit
+fun CategoryProductItem(
+    product: Product,
+    onProductClick: (Product) -> Unit
 ) {
     Card(
         onClick = { onProductClick(product) },
@@ -121,14 +129,14 @@ fun ProductItem(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            coil.compose.AsyncImage(
+            AsyncImage(
                 model = product.imagen,
                 contentDescription = "Imagen de ${product.nombre}",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(MaterialTheme.shapes.medium),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                contentScale = ContentScale.Crop
             )
 
             Spacer(modifier = Modifier.height(12.dp))

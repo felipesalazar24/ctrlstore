@@ -7,6 +7,8 @@ sealed class AppRoutes(val route: String) {
     object Cart : AppRoutes("cart")
     object Profile : AppRoutes("profile")
 
+    object ProductsByCategory : AppRoutes("productsByCategory/{category}")
+
     companion object {
         fun getRouteForName(name: String): String {
             return when (name) {
@@ -16,6 +18,7 @@ sealed class AppRoutes(val route: String) {
                 "Products" -> Products.route
                 "Cart" -> Cart.route
                 "Profile" -> Profile.route
+                "ProductsByCategory" -> ProductsByCategory.route
                 else -> Home.route
             }
         }

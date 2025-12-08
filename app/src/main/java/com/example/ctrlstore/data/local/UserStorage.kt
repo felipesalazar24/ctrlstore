@@ -5,7 +5,7 @@ import android.util.Log
 import com.google.gson.Gson
 
 data class StoredUser(
-    val id: String? = null,
+    val id: Int? = null,
     val name: String? = null,
     val email: String? = null,
     val password: String? = null,
@@ -27,7 +27,6 @@ object UserStorage {
             val json = gson.toJson(user)
             Log.d(TAG, "saveUser() -> JSON: $json")
             prefs(context).edit().putString(KEY_USER, json).apply()
-            // guardamos que no está desconectado
             prefs(context).edit().putBoolean(KEY_LOGGED_OUT, false).apply()
         } catch (e: Exception) {
             Log.e(TAG, "saveUser() -> error: ${e.message}", e)
@@ -46,7 +45,6 @@ object UserStorage {
 
     fun clearUser(context: Context) {
         prefs(context).edit().remove(KEY_USER).apply()
-        // opcional: cuando borramos user, dejamos flag logged_out=false
         prefs(context).edit().putBoolean(KEY_LOGGED_OUT, false).apply()
         Log.d(TAG, "clearUser() -> user removed and logged_out set to false")
     }
