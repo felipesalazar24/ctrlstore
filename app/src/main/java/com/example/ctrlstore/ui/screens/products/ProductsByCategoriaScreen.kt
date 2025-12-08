@@ -30,7 +30,6 @@ fun ProductsByCategoryScreen(
     val isLoading by productsViewModel.isLoading.collectAsState()
     val error by productsViewModel.error.collectAsState()
 
-    // Cargar productos filtrados al entrar o cuando cambie la categoría
     LaunchedEffect(category) {
         productsViewModel.cargarProductosPorCategoria(category)
     }

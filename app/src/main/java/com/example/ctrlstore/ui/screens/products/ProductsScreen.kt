@@ -11,32 +11,37 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ctrlstore.ui.components.NetworkImage
+import coil.compose.AsyncImage
 import com.example.ctrlstore.domain.model.Product
 import com.example.ctrlstore.viewmodel.ProductsViewModel
-import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-
 
 @Composable
 fun ProductsScreen(
     onBackClick: () -> Unit,
     onProductClick: (Product) -> Unit,
-    onNavigateToCart: () -> Unit
+    onNavigateToCart: () -> Unit,
+    onCategoryClick: (String) -> Unit
 ) {
     val productsViewModel: ProductsViewModel = viewModel()
+
     val productos by productsViewModel.productos.collectAsState()
     val isLoading by productsViewModel.isLoading.collectAsState()
     val error by productsViewModel.error.collectAsState()
+    val categories = listOf("Mouse", "Teclado", "Audifono", "Monitor")
+
 
     LaunchedEffect(Unit) {
-        productsViewModel.cargarProductos()
+        if (productos.isEmpty()) {
+            productsViewModel.cargarProductos()
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
 
+        // ░░ Barra superior ░░
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -48,13 +53,21 @@ fun ProductsScreen(
                 Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
             }
             Text(
-                "Todos los Productos",
+                text = "Todos los Productos",
                 style = MaterialTheme.typography.headlineSmall
             )
             IconButton(onClick = onNavigateToCart) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = "Ir al carrito")
             }
         }
+
+        CategoryDropdown(
+            onCategorySelected = { category ->
+                onCategoryClick(category)
+            }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         when {
             isLoading -> {
@@ -75,17 +88,27 @@ fun ProductsScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Error: $error")
+                        Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = { productsViewModel.cargarProductos() },
-                            modifier = Modifier.padding(top = 16.dp)
+                            modifier = Modifier.padding(top = 8.dp)
                         ) {
                             Text("Reintentar")
                         }
                     }
+                }
+            }
+
+            productos.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No hay productos disponibles")
                 }
             }
 
@@ -111,8 +134,8 @@ fun ProductsScreen(
 
 @Composable
 fun ProductItem(
-    product: com.example.ctrlstore.domain.model.Product,
-    onProductClick: (com.example.ctrlstore.domain.model.Product) -> Unit
+    product: Product,
+    onProductClick: (Product) -> Unit
 ) {
     Card(
         onClick = { onProductClick(product) },
@@ -121,14 +144,14 @@ fun ProductItem(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            coil.compose.AsyncImage(
+            AsyncImage(
                 model = product.imagen,
                 contentDescription = "Imagen de ${product.nombre}",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(MaterialTheme.shapes.medium),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                contentScale = ContentScale.Crop
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -162,6 +185,55 @@ fun ProductItem(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CategoryDropdown(
+    onCategorySelected: (String) -> Unit
+) {
+    val categories = listOf("Mouse", "Teclado", "Audifono", "Monitor")
+
+    var expanded by remember { mutableStateOf(false) }
+    var selectedText by remember { mutableStateOf("Mouse") }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        TextField(
+            value = selectedText,
+            onValueChange = { },
+            readOnly = true,
+            label = { Text("Selecciona una categoría") },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            colors = ExposedDropdownMenuDefaults.textFieldColors(),
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            categories.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        selectedText = option
+                        expanded = false
+                        onCategorySelected(option)
+                    }
+                )
+            }
         }
     }
 }

@@ -22,6 +22,7 @@ import com.example.ctrlstore.ui.screens.auth.LoginScreen
 import com.example.ctrlstore.ui.screens.auth.RegisterScreen
 import com.example.ctrlstore.ui.screens.products.ProductDetailScreen
 import com.example.ctrlstore.ui.screens.products.ProductsScreen
+import com.example.ctrlstore.ui.screens.products.ProductsByCategoryScreen    // ⬅️ importa la nueva screen
 import com.example.ctrlstore.ui.screens.cart.CartScreen
 import com.example.ctrlstore.ui.screens.home.HomeScreen
 import com.example.ctrlstore.ui.theme.CTRLstoreTheme
@@ -51,6 +52,8 @@ class MainActivity : ComponentActivity() {
                     var currentScreen by remember { mutableStateOf(initialScreen) }
                     var selectedProductId by remember { mutableIntStateOf(0) }
 
+                    var selectedCategory by remember { mutableStateOf("Mouse") }
+
                     when (currentScreen) {
                         "login" -> LoginScreen(
                             onLoginSuccess = {
@@ -60,6 +63,7 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "register"
                             }
                         )
+
                         "register" -> RegisterScreen(
                             onRegisterSuccess = {
                                 currentScreen = "home"
@@ -68,6 +72,7 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "login"
                             }
                         )
+
                         "home" -> HomeScreen(
                             onNavigateToProducts = { currentScreen = "products" },
                             onNavigateToCart = { currentScreen = "cart" },
@@ -81,6 +86,7 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "login"
                             }
                         )
+
                         "products" -> ProductsScreen(
                             onBackClick = {
                                 currentScreen = "home"
@@ -91,8 +97,27 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToCart = {
                                 currentScreen = "cart"
+                            },
+                            onCategoryClick = { category ->
+                                selectedCategory = category
+                                currentScreen = "productsByCategory"
                             }
                         )
+
+                        "productsByCategory" -> ProductsByCategoryScreen(
+                            category = selectedCategory,
+                            onBackClick = {
+                                currentScreen = "products"
+                            },
+                            onProductClick = { product ->
+                                selectedProductId = product.id
+                                currentScreen = "productDetail"
+                            },
+                            onNavigateToCart = {
+                                currentScreen = "cart"
+                            }
+                        )
+
                         "productDetail" -> ProductDetailScreen(
                             productId = selectedProductId,
                             onBackClick = {
@@ -107,12 +132,17 @@ class MainActivity : ComponentActivity() {
                                     quantity = 1
                                 )
                                 cartViewModel.addItem(item)
-                                Toast.makeText(context, "${product.nombre} agregado al carrito", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "${product.nombre} agregado al carrito",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             },
                             onNavigateToCart = {
                                 currentScreen = "cart"
                             }
                         )
+
                         "cart" -> CartScreen(
                             onNavigateToProducts = {
                                 currentScreen = "products"

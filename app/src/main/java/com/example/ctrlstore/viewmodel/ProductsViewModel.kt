@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 class ProductsViewModel : ViewModel() {
 
-    private val localRepo = ProductRepository()
+    private val repository = ProductRepository()
 
     private val _productos = MutableStateFlow<List<Product>>(emptyList())
     val productos: StateFlow<List<Product>> = _productos
@@ -25,45 +25,12 @@ class ProductsViewModel : ViewModel() {
 
     fun cargarProductos() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-
             try {
-                val response = ApiClient.inventarioApi.getProductos()
-
-                val remoteList: List<RemoteProduct> =
-                    if (response.isSuccessful && response.body() != null) {
-                        response.body()!!
-                    } else {
-                        emptyList()
-                    }
-
-                val staticList = localRepo.getAllProducts()
-
-                val finalList: List<Product> =
-                    if (remoteList.isNotEmpty()) {
-                        remoteList.map { remote ->
-                            val template = staticList.find { it.id == remote.id }
-
-                            Product(
-                                id = remote.id,
-                                nombre = remote.nombre,
-                                precio = remote.precio,
-                                descripcion = remote.descripcion,
-                                imagen = template?.imagen ?: "",
-                                miniaturas = template?.miniaturas ?: emptyList(),
-                                atributo = remote.categoria
-                            )
-                        }
-                    } else {
-                        staticList
-                    }
-
-                _productos.value = finalList
-
+                _isLoading.value = true
+                _error.value = null
+                _productos.value = repository.getAllProducts()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Error al cargar productos"
-                _productos.value = localRepo.getAllProducts() // fallback
             } finally {
                 _isLoading.value = false
             }
@@ -72,13 +39,10 @@ class ProductsViewModel : ViewModel() {
 
     fun cargarProductosPorCategoria(category: String) {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
             try {
-                val lista = productos.value.filter {
-                    it.atributo.equals(category, ignoreCase = true)
-                }
-                _productos.value = lista
+                _isLoading.value = true
+                _error.value = null
+                _productos.value = repository.getProductsByCategory(category)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Error al filtrar productos"
             } finally {
