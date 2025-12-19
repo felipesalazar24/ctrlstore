@@ -26,89 +26,44 @@ fun ProductsByCategoryScreen(
     onNavigateToCart: () -> Unit
 ) {
     val productsViewModel: ProductsViewModel = viewModel()
-    val productos by productsViewModel.productos.collectAsState()
+    val allProducts by productsViewModel.products.collectAsState()
     val isLoading by productsViewModel.isLoading.collectAsState()
-    val error by productsViewModel.error.collectAsState()
 
-    LaunchedEffect(category) {
-        productsViewModel.cargarProductosPorCategoria(category)
+    // Filtro sin ? porque atributo es obligatorio
+    val categoryProducts = remember(allProducts, category) {
+        allProducts.filter {
+            it.atributo.equals(category, ignoreCase = true)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (allProducts.isEmpty()) {
+            productsViewModel.fetchProducts()
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-
-        // Barra superior
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBackClick) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
-            }
-            Text(
-                text = "Categoría: $category",
-                style = MaterialTheme.typography.headlineSmall
-            )
-            IconButton(onClick = onNavigateToCart) {
-                Icon(Icons.Default.ShoppingCart, contentDescription = "Ir al carrito")
-            }
+            IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, "Volver") }
+            Text("Categoría: $category", style = MaterialTheme.typography.headlineSmall)
+            IconButton(onClick = onNavigateToCart) { Icon(Icons.Default.ShoppingCart, "Carrito") }
         }
 
         when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-
-            error != null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Error: $error")
-                        Spacer(Modifier.height(8.dp))
-                        Button(onClick = { productsViewModel.cargarProductosPorCategoria(category) }) {
-                            Text("Reintentar")
-                        }
-                    }
-                }
-            }
-
-            productos.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No hay productos en esta categoría")
-                }
-            }
-
+            isLoading -> Box(Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            categoryProducts.isEmpty() -> Box(Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) { Text("No hay productos") }
             else -> {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
+                    modifier = Modifier.fillMaxSize().weight(1f),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(productos) { product ->
-                        CategoryProductItem(
-                            product = product,
-                            onProductClick = onProductClick
-                        )
+                    items(categoryProducts) { product ->
+                        CategoryProductItem(product = product, onProductClick = onProductClick)
                     }
                 }
             }
@@ -117,58 +72,25 @@ fun ProductsByCategoryScreen(
 }
 
 @Composable
-fun CategoryProductItem(
-    product: Product,
-    onProductClick: (Product) -> Unit
-) {
+fun CategoryProductItem(product: Product, onProductClick: (Product) -> Unit) {
     Card(
         onClick = { onProductClick(product) },
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-
             AsyncImage(
-                model = product.imagen,
-                contentDescription = "Imagen de ${product.nombre}",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(MaterialTheme.shapes.medium),
+                model = product.imagenUrl,
+                contentDescription = product.nombre,
+                modifier = Modifier.fillMaxWidth().height(200.dp).clip(MaterialTheme.shapes.medium),
                 contentScale = ContentScale.Crop
             )
-
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = product.nombre,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = product.precioFormateado,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = product.descripcion,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = product.atributo,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Textos directos
+            Text(product.nombre, style = MaterialTheme.typography.titleMedium, maxLines = 2)
+            Text("$ ${product.precio}", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            Text(product.descripcion, style = MaterialTheme.typography.bodySmall, maxLines = 2)
         }
     }
 }

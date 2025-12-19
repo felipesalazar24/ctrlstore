@@ -16,13 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ctrlstore.data.local.CartItem
-import com.example.ctrlstore.data.local.CartStorage
 import com.example.ctrlstore.data.local.UserStorage
+import com.example.ctrlstore.domain.model.Product
 import com.example.ctrlstore.ui.screens.auth.LoginScreen
 import com.example.ctrlstore.ui.screens.auth.RegisterScreen
 import com.example.ctrlstore.ui.screens.products.ProductDetailScreen
 import com.example.ctrlstore.ui.screens.products.ProductsScreen
-import com.example.ctrlstore.ui.screens.products.ProductsByCategoryScreen    // ⬅️ importa la nueva screen
+import com.example.ctrlstore.ui.screens.products.ProductsByCategoryScreen
 import com.example.ctrlstore.ui.screens.cart.CartScreen
 import com.example.ctrlstore.ui.screens.home.HomeScreen
 import com.example.ctrlstore.ui.theme.CTRLstoreTheme
@@ -50,8 +50,8 @@ class MainActivity : ComponentActivity() {
                     val loginViewModel: LoginViewModel = viewModel()
 
                     var currentScreen by remember { mutableStateOf(initialScreen) }
+                    // Usamos 0 como ID por defecto
                     var selectedProductId by remember { mutableIntStateOf(0) }
-
                     var selectedCategory by remember { mutableStateOf("Mouse") }
 
                     when (currentScreen) {
@@ -92,7 +92,8 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "home"
                             },
                             onProductClick = { product ->
-                                selectedProductId = product.id
+                                // CORRECCIÓN 1: Usar operador Elvis (?:) para evitar nulos
+                                selectedProductId = product.id ?: 0
                                 currentScreen = "productDetail"
                             },
                             onNavigateToCart = {
@@ -110,7 +111,8 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "products"
                             },
                             onProductClick = { product ->
-                                selectedProductId = product.id
+                                // CORRECCIÓN 2: Protección contra ID nulo
+                                selectedProductId = product.id ?: 0
                                 currentScreen = "productDetail"
                             },
                             onNavigateToCart = {
@@ -124,17 +126,22 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "products"
                             },
                             onAddToCart = { product ->
+                                // CORRECCIÓN 3: Limpieza de tipos (aquí estaba el mayor error)
                                 val item = CartItem(
-                                    productId = product.id.toString(),
-                                    title = product.nombre,
-                                    price = product.precio.toDouble(),
-                                    imageUrl = product.imagen,
+                                    // Si id es null, usamos "0"
+                                    productId = product.id?.toString() ?: "0",
+                                    // Si nombre es null, usamos texto por defecto
+                                    title = product.nombre ?: "Producto sin nombre",
+                                    // ELIMINADO .toDouble() porque ya es Double?. Si es null usamos 0.0
+                                    price = product.precio ?: 0.0,
+                                    // La imagen ya viene calculada del modelo
+                                    imageUrl = product.imagenUrl,
                                     quantity = 1
                                 )
                                 cartViewModel.addItem(item)
                                 Toast.makeText(
                                     context,
-                                    "${product.nombre} agregado al carrito",
+                                    "${product.nombre ?: "Producto"} agregado al carrito",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             },

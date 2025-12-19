@@ -26,105 +26,40 @@ fun ProductsScreen(
     onCategoryClick: (String) -> Unit
 ) {
     val productsViewModel: ProductsViewModel = viewModel()
-
-    val productos by productsViewModel.productos.collectAsState()
+    val allProducts by productsViewModel.products.collectAsState()
     val isLoading by productsViewModel.isLoading.collectAsState()
-    val error by productsViewModel.error.collectAsState()
-    val categories = listOf("Mouse", "Teclado", "Audifono", "Monitor")
-
 
     LaunchedEffect(Unit) {
-        if (productos.isEmpty()) {
-            productsViewModel.cargarProductos()
+        if (allProducts.isEmpty()) {
+            productsViewModel.fetchProducts()
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-
-        // ░░ Barra superior ░░
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBackClick) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
-            }
-            Text(
-                text = "Todos los Productos",
-                style = MaterialTheme.typography.headlineSmall
-            )
-            IconButton(onClick = onNavigateToCart) {
-                Icon(Icons.Default.ShoppingCart, contentDescription = "Ir al carrito")
-            }
+            IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, "Volver") }
+            Text("Productos", style = MaterialTheme.typography.headlineSmall)
+            IconButton(onClick = onNavigateToCart) { Icon(Icons.Default.ShoppingCart, "Carrito") }
         }
 
-        CategoryDropdown(
-            onCategorySelected = { category ->
-                onCategoryClick(category)
-            }
-        )
-
+        CategoryDropdown(onCategorySelected = { onCategoryClick(it) })
         Spacer(modifier = Modifier.height(8.dp))
 
         when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-
-            error != null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Error: $error")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = { productsViewModel.cargarProductos() },
-                            modifier = Modifier.padding(top = 8.dp)
-                        ) {
-                            Text("Reintentar")
-                        }
-                    }
-                }
-            }
-
-            productos.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No hay productos disponibles")
-                }
-            }
-
+            isLoading -> Box(Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            allProducts.isEmpty() -> Box(Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) { Text("No hay productos") }
             else -> {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
+                    modifier = Modifier.fillMaxSize().weight(1f),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(productos) { product ->
-                        ProductItem(
-                            product = product,
-                            onProductClick = onProductClick
-                        )
+                    items(allProducts) { product ->
+                        ProductItem(product = product, onProductClick = onProductClick)
                     }
                 }
             }
@@ -133,97 +68,52 @@ fun ProductsScreen(
 }
 
 @Composable
-fun ProductItem(
-    product: Product,
-    onProductClick: (Product) -> Unit
-) {
+fun ProductItem(product: Product, onProductClick: (Product) -> Unit) {
     Card(
         onClick = { onProductClick(product) },
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-
             AsyncImage(
-                model = product.imagen,
-                contentDescription = "Imagen de ${product.nombre}",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(MaterialTheme.shapes.medium),
+                model = product.imagenUrl,
+                contentDescription = product.nombre,
+                modifier = Modifier.fillMaxWidth().height(200.dp).clip(MaterialTheme.shapes.medium),
                 contentScale = ContentScale.Crop
             )
-
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = product.nombre,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = product.precioFormateado,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = product.descripcion,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = product.atributo,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Textos directos
+            Text(product.nombre, style = MaterialTheme.typography.titleMedium, maxLines = 2)
+            Text("$ ${product.precio}", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            Text(product.descripcion, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+            Text(product.atributo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CategoryDropdown(
-    onCategorySelected: (String) -> Unit
-) {
+fun CategoryDropdown(onCategorySelected: (String) -> Unit) {
     val categories = listOf("Mouse", "Teclado", "Audifono", "Monitor")
-
     var expanded by remember { mutableStateOf(false) }
-    var selectedText by remember { mutableStateOf("Mouse") }
+    var selectedText by remember { mutableStateOf("Filtrar por categoría") }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         TextField(
             value = selectedText,
-            onValueChange = { },
+            onValueChange = {},
             readOnly = true,
-            label = { Text("Selecciona una categoría") },
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
+            label = { Text("Categorías") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = ExposedDropdownMenuDefaults.textFieldColors(),
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth()
+            modifier = Modifier.menuAnchor().fillMaxWidth()
         )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             categories.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(option) },

@@ -9,8 +9,6 @@ object ApiClient {
 
     private const val BASE_URL_USUARIO = "http://192.168.18.116:8080/"
     private const val BASE_URL_INVENTARIO = "http://192.168.18.116:8081/"
-    //private const val BASE_URL_TRANSACCIONES = "http://localhost:8083/"
-
     private val inventarioRetrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL_INVENTARIO)
@@ -40,9 +38,4 @@ object ApiClient {
 
     val usuarioApi: UsuarioApiService =
         getRetrofit(BASE_URL_USUARIO).create(UsuarioApiService::class.java)
-
-    /*
-    val transaccionesApi: TransaccionesApiService =
-        getRetrofit(BASE_URL_TRANSACCIONES).create(TransaccionesApiService::class.java)
-     */
 }

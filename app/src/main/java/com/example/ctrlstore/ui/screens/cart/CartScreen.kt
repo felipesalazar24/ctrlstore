@@ -57,7 +57,6 @@ fun CartScreen(
         }
 
         if (cartState.isEmpty()) {
-            // Estado vacío: mostramos mensaje y botones para navegar (Home / Productos)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -79,7 +78,6 @@ fun CartScreen(
                     modifier = Modifier.padding(bottom = 32.dp)
                 )
 
-                // Botones visibles cuando el carrito está vacío
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Button(
                         onClick = onNavigateToProducts,
@@ -122,7 +120,6 @@ fun CartScreen(
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Imagen (si tienes NetworkImage componible)
                             NetworkImage(
                                 imageUrl = item.imageUrl ?: "",
                                 contentDescription = item.title,
@@ -147,7 +144,6 @@ fun CartScreen(
                 }
             }
 
-            // Total y acciones
             val total = cartState.fold(0.0) { acc, it -> acc + (it.price * it.quantity) }
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -163,7 +159,6 @@ fun CartScreen(
 
                 Button(
                     onClick = {
-                        // Aquí iría la lógica real de pago -> por ahora solo limpiamos
                         cartViewModel.clearCart()
                         Toast.makeText(context, "Pago realizado. Carrito vacío.", Toast.LENGTH_SHORT).show()
                     },
